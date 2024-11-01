@@ -1,11 +1,4 @@
-FROM python:3.11-slim
-
-# Instalar dependencias del sistema necesarias
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    gcc \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.11
 
 # Establecer el directorio de trabajo
 WORKDIR /app
@@ -13,13 +6,8 @@ WORKDIR /app
 # Copiar requirements.txt
 COPY requirements.txt .
 
-# Actualizar pip e instalar wheel
+# Instalar dependencias
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir wheel
-
-# Instalar dependencias en orden específico para evitar conflictos
-RUN pip install --no-cache-dir numpy==2.1.2 && \
-    pip install --no-cache-dir pandas==1.5.3 && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copiar el código de la aplicación
