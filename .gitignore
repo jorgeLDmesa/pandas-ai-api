@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Archivos de ambiente
+.env
+
+# Directorios de datos y gráficos
+data/
+charts/
+
+# Logs
+*.log
+
+# Archivos temporales
+*.tmp

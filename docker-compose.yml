@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./app:/app/app
+      - ./data:/app/data
+      - ./charts:/app/charts
+    environment:
+      - API_KEY=${API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - RUTA_ARCHIVO=/app/data/tu_archivo.xlsx
+      - RUTA_CHARTS=/app/charts
+    restart: unless-stopped
