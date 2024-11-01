@@ -1,26 +1,29 @@
-FROM python:3.10
+FROM python:3.9
 
-# Establecer el directorio de trabajo
 WORKDIR /app
+
+# Instalar dependencias del sistema si son necesarias
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements.txt
 COPY requirements.txt .
 
-# Instalar dependencias
+# Instalar primero numpy y pandas con versiones específicas
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir \
+    numpy==1.23.5 \
+    pandas==1.5.3 \
+    matplotlib==3.5.3
 
-# Copiar el código de la aplicación
+# Luego instalar el resto de dependencias
+RUN pip install --no-cache-dir -r requirements.txt
+
 COPY . .
-
-# Crear directorios necesarios
 RUN mkdir -p charts data
 
-# Exponer el puerto
 EXPOSE 5005
-
-# Establecer PYTHONPATH
 ENV PYTHONPATH=/app
 
-# Comando para ejecutar la aplicación
 CMD ["uvicorn", "app.PandasAi:app", "--host", "0.0.0.0", "--port", "5005", "--reload"]
