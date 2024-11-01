@@ -9,12 +9,19 @@ from pandasai import SmartDataframe
 from pandasai.llm import OpenAI
 from pandasai.helpers.openai_info import get_openai_callback
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 
 # Cargar variables de entorno
 load_dotenv()
 
 app = FastAPI(title="PandasAI API", description="API para análisis de datos con PandasAI")
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permitir todas las solicitudes de origen
+    allow_credentials=True,
+    allow_methods=["*"],  # Permitir todos los métodos (GET, POST, etc.)
+    allow_headers=["*"],  # Permitir todas las cabeceras
+)
 # Configuración de API Key
 API_KEY = os.getenv("API_KEY")
 api_key_header = APIKeyHeader(name="X-API-Key")
