@@ -130,7 +130,7 @@ async def analyze_data(
             # Cargar el DataFrame desde el archivo local
             df = cargar_dataframe(file_path)
             # Opcionalmente, eliminar el archivo después de usarlo
-            # os.remove(file_path)
+            os.remove(file_path)
         elif dataframe_url:
             # Cargar el DataFrame desde la URL
             df = cargar_dataframe(dataframe_url)
