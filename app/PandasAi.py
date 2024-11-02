@@ -10,6 +10,8 @@ from pandasai.llm import OpenAI
 from pandasai.helpers.openai_info import get_openai_callback
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+import base64
+import io
 
 # Cargar variables de entorno
 load_dotenv()
@@ -65,6 +67,18 @@ def configurar_smart_dataframe(df, llm, ruta_guardado):
         },
     )
 
+def decodificar_base64_a_dataframe(base64_string: str) -> pd.DataFrame:
+    """Decodifica un string base64 a DataFrame"""
+    try:
+        # Decodificar el string base64 a bytes
+        bytes_data = base64.b64decode(base64_string)
+        # Crear un objeto BytesIO
+        buffer = io.BytesIO(bytes_data)
+        # Leer el DataFrame desde el buffer
+        return pd.read_excel(buffer)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al decodificar base64: {str(e)}")
+
 def subir_a_s3(archivo_local, bucket_name, s3_key):
     try:
         s3_client = configurar_aws()
@@ -108,6 +122,7 @@ async def analyze_data(
     queries: List[str] = Form(...),
     dataframe_url: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
+    base64_file: Optional[str] = Form(None),
     api_key: str = Depends(get_api_key)
 ):
     try:
@@ -131,11 +146,17 @@ async def analyze_data(
             df = cargar_dataframe(file_path)
             # Opcionalmente, eliminar el archivo después de usarlo
             os.remove(file_path)
+        elif base64_file:
+            # Cargar el DataFrame desde el string base64
+            df = decodificar_base64_a_dataframe(base64_file)
         elif dataframe_url:
             # Cargar el DataFrame desde la URL
             df = cargar_dataframe(dataframe_url)
         else:
-            raise HTTPException(status_code=400, detail="Debe proporcionar 'dataframe_url' o subir un archivo.")
+            raise HTTPException(
+                status_code=400, 
+                detail="Debe proporcionar 'dataframe_url', subir un archivo o proporcionar un archivo en base64."
+            )
         
         # Configurar el SmartDataframe
         sdf = configurar_smart_dataframe(df, llm, RUTA_GUARDADO)
