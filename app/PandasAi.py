@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, Security, Depends
+from fastapi import FastAPI, HTTPException, Security, Depends, File, UploadFile, Form
 from fastapi.security.api_key import APIKeyHeader
 from pydantic import BaseModel
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Optional
 import os
 import pandas as pd
 import boto3
@@ -26,10 +26,6 @@ app.add_middleware(
 API_KEY = os.getenv("API_KEY")
 api_key_header = APIKeyHeader(name="X-API-Key")
 
-class QueryRequest(BaseModel):
-    queries: List[str]
-    dataframe_url: str
-
 def get_api_key(api_key_header: str = Security(api_key_header)):
     if api_key_header == API_KEY:
         return api_key_header
@@ -51,8 +47,8 @@ def configurar_llm():
     """Configura el modelo de OpenAI"""
     return OpenAI(api_token=os.getenv('OPENAI_API_KEY'))
 
-# def cargar_dataframe(ruta_archivo):
-#     return pd.read_excel(ruta_archivo)
+def cargar_dataframe(ruta_archivo):
+    return pd.read_excel(ruta_archivo)
 
 def configurar_smart_dataframe(df, llm, ruta_guardado):
     os.makedirs(ruta_guardado, exist_ok=True)
@@ -108,21 +104,45 @@ def procesar_consulta(sdf, consulta: str, bucket_name: str, ruta_charts: str) ->
         }
 
 @app.post("/analyze", response_model=List[Dict])
-async def analyze_data(request: QueryRequest, api_key: str = Depends(get_api_key)):
+async def analyze_data(
+    queries: List[str] = Form(...),
+    dataframe_url: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    api_key: str = Depends(get_api_key)
+):
     try:
         # Configuraciones desde variables de entorno
-        # RUTA_ARCHIVO = os.getenv('RUTA_ARCHIVO')
         RUTA_GUARDADO = os.getenv('RUTA_CHARTS')
         BUCKET_NAME = os.getenv('AWS_BUCKET_NAME')
         
         # Inicialización
         llm = configurar_llm()
-        # df = cargar_dataframe(RUTA_ARCHIVO)
-        sdf = configurar_smart_dataframe(request.dataframe_url, llm, RUTA_GUARDADO)
+        
+        # Determinar el DataFrame a usar
+        if file:
+            # Guardar el archivo subido en la carpeta 'data'
+            data_dir = 'data'
+            os.makedirs(data_dir, exist_ok=True)
+            file_path = os.path.join(data_dir, file.filename)
+            with open(file_path, 'wb') as f:
+                content = await file.read()
+                f.write(content)
+            # Cargar el DataFrame desde el archivo local
+            df = cargar_dataframe(file_path)
+            # Opcionalmente, eliminar el archivo después de usarlo
+            # os.remove(file_path)
+        elif dataframe_url:
+            # Cargar el DataFrame desde la URL
+            df = cargar_dataframe(dataframe_url)
+        else:
+            raise HTTPException(status_code=400, detail="Debe proporcionar 'dataframe_url' o subir un archivo.")
+        
+        # Configurar el SmartDataframe
+        sdf = configurar_smart_dataframe(df, llm, RUTA_GUARDADO)
         
         # Procesar todas las consultas
         resultados = []
-        for query in request.queries:
+        for query in queries:
             resultado = procesar_consulta(sdf, query, BUCKET_NAME, RUTA_GUARDADO)
             resultados.append(resultado)
             
