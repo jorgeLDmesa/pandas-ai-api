@@ -18,7 +18,8 @@ RUN pip install --upgrade pip && \
     matplotlib==3.5.3 \
     pyyaml==6.0.1 \
     beautifulsoup4==4.12.3 \
-    python-multipart==0.0.9
+    python-multipart==0.0.9 \
+    openpyxl==3.1.2
 
 # Luego instalar el resto de dependencias
 RUN pip install --no-cache-dir -r requirements.txt
